@@ -1,7 +1,9 @@
-streamlit
+streamlit==1.35.0
 reportlab
-python-docx
-requests
 beautifulsoup4
+requests
+python-docx
 spacy
-python -m spacy download en_core_web_sm
+
+# spaCy model (direct link)
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl

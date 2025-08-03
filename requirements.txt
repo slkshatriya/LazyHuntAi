@@ -1,6 +1,6 @@
 streamlit
 reportlab
-spacy==3.7.2
+spacy
 beautifulsoup4
-python-docx
 requests
+python-docx

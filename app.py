@@ -3,7 +3,6 @@ import tempfile
 import re
 import requests
 import spacy
-import os
 import io
 from bs4 import BeautifulSoup
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -12,18 +11,15 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from docx import Document
 
+# -------------------- NLP Model --------------------
 @st.cache_resource
 def get_nlp_model():
-    try:
-        return spacy.load("en_core_web_sm")
-    except OSError:
-        from spacy.cli import download
-        download("en_core_web_sm")
-        return spacy.load("en_core_web_sm")
+    # Model will already be installed via requirements.txt
+    return spacy.load("en_core_web_sm")
 
 nlp = get_nlp_model()
 
-# Build resume PDF
+# -------------------- Resume PDF Builder --------------------
 def build_resume(data, file_path):
     doc = SimpleDocTemplate(file_path, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
     styles = getSampleStyleSheet()
@@ -36,21 +32,26 @@ def build_resume(data, file_path):
     flow.append(Paragraph(data['name'], styles['Header']))
     flow.append(Paragraph(f"{data['location']} | {data['phone']} | {data['email']}", contact_info_style))
     flow.append(Spacer(1, 12))
+
     flow.append(Paragraph("Professional Summary", styles['SubHeader']))
     flow.append(Paragraph(data['summary'], styles['List']))
+
     flow.append(Paragraph("Experience", styles['SubHeader']))
     for exp in data['experience']:
         flow.append(Paragraph(f"{exp['role']} at {exp['company']} ({exp['duration']})", styles['List']))
         for line in exp['tasks'].split('\n'):
             flow.append(Paragraph(f"• {line.strip()}", styles['List']))
+
     flow.append(Paragraph("Education", styles['SubHeader']))
     for edu in data['education']:
         flow.append(Paragraph(f"{edu['degree']}, {edu['institution']} ({edu['duration']})", styles['List']))
+
     flow.append(Paragraph("Skills", styles['SubHeader']))
     flow.append(Paragraph(", ".join(data['skills']), styles['List']))
+
     doc.build(flow)
 
-# Extract JD text
+# -------------------- Job Description Extractor --------------------
 def extract_job_desc(url: str) -> str:
     try:
         res = requests.get(url, timeout=10)
@@ -64,7 +65,7 @@ def extract_job_desc(url: str) -> str:
         st.error(f"Error extracting job description: {e}")
         return ""
 
-# Extract tech skills
+# -------------------- Skill Extractor --------------------
 def extract_skills(text):
     keywords = {
         'Python', 'PowerShell', 'Azure', 'AWS', 'GCP', 'Kubernetes', 'MLflow', 'Kubeflow', 'RAG',
@@ -80,13 +81,13 @@ def extract_skills(text):
     found.update([m for m in matches if m in keywords])
     return sorted(found)
 
-# Read .docx
+# -------------------- Resume .docx Reader --------------------
 def read_docx(file) -> tuple[Document, list]:
     buffer = io.BytesIO(file.read())
     doc = Document(buffer)
     return doc, [p.text for p in doc.paragraphs]
 
-# Update skills only
+# -------------------- Update Skills in Resume --------------------
 def update_skills_only(doc: Document, lines: list, new_skills: list):
     header = "skills"
     idx = None
@@ -102,8 +103,7 @@ def update_skills_only(doc: Document, lines: list, new_skills: list):
         merged = existing.union([s.lower() for s in new_skills])
         doc.paragraphs[nexti].text = ", ".join(sorted({s.title() for s in merged}))
 
-# -------------------- UI --------------------
-
+# -------------------- Streamlit UI --------------------
 st.title("💫 LazyHuntAi: Your Resume Assistant")
 mode = st.radio("Choose an Option:", ["Build Resume from Scratch", "Update Resume Skills from Job URL"])
 

@@ -14,7 +14,6 @@ from docx import Document
 # -------------------- NLP Model --------------------
 @st.cache_resource
 def get_nlp_model():
-    # Model will already be installed via requirements.txt
     return spacy.load("en_core_web_sm")
 
 nlp = get_nlp_model()
@@ -56,7 +55,7 @@ def extract_job_desc(url: str) -> str:
     try:
         res = requests.get(url, timeout=10)
         soup = BeautifulSoup(res.content, 'html.parser')
-        for cls in ['description', 'jobDescription', 'job-desc', 'job-description']:
+        for cls in ['description', 'jobDescription', 'job-desc', 'job-description', 'Job Description', 'job description']:
             jd_div = soup.find(class_=cls)
             if jd_div:
                 return jd_div.get_text(" ", strip=True)
